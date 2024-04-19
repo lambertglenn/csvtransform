@@ -1,6 +1,9 @@
 
-sample1 <- read.csv("sample1.csv", header=TRUE, sep=",")
-sample2 <- read.csv("sample2.csv", header=TRUE, sep=",")
+files <- list.files(path = "data/")
+f <- list()
+
+sample1 <- read.csv(paste0("data/",files[1]), header=TRUE, sep=",")
+sample2 <- read.csv(paste0("data/",files[2]), header=TRUE, sep=",")
 
 fastmerge <- function(d1, d2) {
   d1.names <- names(d1)
@@ -30,25 +33,31 @@ fastmerge <- function(d1, d2) {
 }
 
 table<- fastmerge(sample1, sample2)
-
+for (i in 3:length(files)) {
+  print(paste0("loading..",files[i]))
+  sample2 <- read.csv(paste0("data/",files[i]), header=TRUE, sep=",")
+  table<- fastmerge(table, sample2)
+}
 
 table[is.na(table)] <- 0     # replace nulls with 0's'
 
-table$year<-substring(table$date,nchar(table$date)-3)
-table$month<-substring(table$date,first=4,last=7)
+table$year<-substring(table$X_time,nchar(table$X_time)-3)
+table$month<-substring(table$X_time,first=4,last=7)
 table$key<-paste(table$year,"-", table$month)
-table$key<-gsub(" ", "", table$key)
+table$key<-gsub("00:00:00", "", table$key)
 table$month<-NULL
 table$year<-NULL
-#table$date<-table$key
+table$X_time<-table$key
+table$key<-NULL
+table$limit<-NULL
 
-#table<-aggregate(table[1:6], by=list(date=table$key), FUN=sum)
-#table[1:6]/length(table)
+ncols<-length(table)
+table<-aggregate(table[2:ncols], by=list(date=table$X_time), FUN=mean)
 
 #rownames(table) <- table[,1] # set rownames to col1 (dates)
 #table[,1]<-NULL              # remove col1 (dates)
 
-write.csv(table,file="splunkcloudingest.csv", row.names = TRUE, quote=FALSE)
+write.csv(table,file="transformed.csv", row.names = FALSE, quote=FALSE)
 
 # table<-t(table)             # transpose table
 # 
